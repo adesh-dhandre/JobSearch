@@ -70,10 +70,10 @@ The existing ChatGPT daily report is separate. It remains enabled and uses its o
 - It reads descriptions, highlights, salary text and supplied application links. Keyword matching identifies relevant skills; **skills mentioned are not necessarily mandatory**.
 - Experience and annual lakh/LPA salary parsing is best effort. Unrecognized salaries are labelled not parsed; no salary is guessed from an employer, title or market average. Estimated salary figures never earn top priority.
 - ₹8–12 LPA earns top support priority. ₹6–10 LPA or “up to ₹10 LPA” earns a lower priority because ₹8 LPA is not a guaranteed minimum. Lower and unknown salaries stay in the feed.
-- Apply links come from the provider's `apply_options`. Employer/ATS links are preferred heuristically where identifiable, otherwise a job board link is used. **Availability is not independently verified**: Google Jobs may contain outdated listings, and sites may redirect. Check the destination before applying.
+- Apply links come from the provider's `apply_options`. Only employer-matching company career pages or official ATS tenants are accepted; job-board-only listings are omitted. **Availability is not independently verified**: Google Jobs may contain outdated listings, and sites may redirect. Check the destination before applying.
 - India locations and named Indian cities are accepted. A remote listing needs India evidence; confirm eligibility on its application page.
 - No generated AI/Java listings are seeded. Before the first live scan, the dashboard shows the original Pune support examples, labelled with their checked date of 3 October 2026.
-- Up to eight matched jobs per category are shown, with recently unseen job identities labelled NEW.
+- Only company-linked jobs are shown. Up to eight matched jobs per category are shown, with recently unseen job identities labelled NEW.
 
 ## Reliability and privacy
 
@@ -110,3 +110,7 @@ The blue **Scan now** button opens an owner-access dialog. Enter your existing `
 A manual scan starts the same search and Discord workflow as the daily schedule. If today's scan already completed, it reports that instead of consuming another six searches or duplicating the digest. If a scan is running it waits for the same run. Failed scans can be retried. The feed polls for up to five minutes while a scan runs. Deploy the latest commit to enable the button's backend function.
 
 The visual theme uses midnight-blue surfaces, chakra-like glow, orange accents, soft card entrances and hover effects. Reduced-motion preferences disable animations.
+
+## Company-only application links
+
+The company-only policy rejects job boards, generic homepages and unrelated employer ATS tenants. It conservatively matches company identity against the career domain or ATS tenant; some valid official links may be missed. Existing saved feeds are filtered on read. The first Scan now after this deployment rebuilds today’s report using cached provider results where available and sends the company-only digest. Results may be fewer or empty when Google Jobs returns no official employer links.
