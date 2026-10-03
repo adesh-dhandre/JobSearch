@@ -1,4 +1,4 @@
-let jobs=[],category='all',query='';
+let jobs=[],category='all',query='',pollTimer=null,pollAttempts=0;
 const $=id=>document.getElementById(id);
 function el(tag,text,className){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(className)n.className=className;return n;}
 function safeLink(raw){try{const u=new URL(raw);return u.protocol==='https:'&&!u.username&&!u.password?u.href:null;}catch{return null;}}
@@ -24,11 +24,25 @@ async function load(){
   try{
     const r=await fetch('/.netlify/functions/jobs',{cache:'no-store'});if(!r.ok)throw new Error('feed unavailable');
     const data=await r.json();if(data.report){jobs=data.report.jobs;$('updated').textContent=`Last updated ${new Date(data.report.updatedAt).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',dateStyle:'medium',timeStyle:'short'})} IST`;
-      $('notice').textContent=data.status?.state==='error'?data.status.message:data.status?.state==='running'?'Today’s search is running. The last completed shortlist is shown.':data.report.notification==='sent'?'Latest digest delivered to the connected Discord channel.':'Latest shortlist saved. Discord delivery is pending.';
-    }else{await seed(data.configured?'Waiting for the first daily search. Initial support examples below.':'Automation setup pending. Initial support examples below; configure the search and Discord connection on Netlify.');}
+      if(data.status?.state==='complete'||data.status?.state==='error')stopPolling();$('notice').textContent=data.status?.state==='error'?data.status.message:data.status?.state==='running'?'Today’s search is running. The last completed shortlist is shown.':data.report.notification==='sent'?'Latest digest delivered to the connected Discord channel.':'Latest shortlist saved. Discord delivery is pending.';
+    }else{await seed(data.status?.state==='running'?'Your search is running. We’re putting your shortlist together.':data.configured?'Waiting for the first daily search. Initial support examples below.':'Automation setup pending. Initial support examples below; configure the search and Discord connection on Netlify.');}
   }catch{await seed('Live feed is unavailable in this preview. Showing the initial support examples, checked 3 October 2026.');}
   finally{$('refresh').disabled=false;render();}
 }
 async function seed(message){try{const r=await fetch('/seed.json');if(!r.ok)throw new Error();const data=await r.json();jobs=data.jobs;$('updated').textContent='Initial Pune support examples · checked 3 October 2026';$('notice').textContent=message;}catch{jobs=[];$('updated').textContent='Feed unavailable';$('notice').textContent='Unable to load openings. Please try refreshing.';}}
 for(const button of document.querySelectorAll('[data-category]'))button.addEventListener('click',()=>{category=button.dataset.category;for(const b of document.querySelectorAll('[data-category]')){const active=b===button;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));}render();});
 $('search').addEventListener('input',e=>{query=e.target.value;render();});$('refresh').addEventListener('click',load);load();
+
+const scanDialog=$('scan-dialog');
+$('scan-now').addEventListener('click',()=>{$('scan-error').textContent='';$('access-code').value='';scanDialog.showModal();$('access-code').focus();});
+$('cancel-scan').addEventListener('click',()=>scanDialog.close());
+scanDialog.addEventListener('close',()=>{$('access-code').value='';});
+function stopPolling(){if(pollTimer)clearInterval(pollTimer);pollTimer=null;$('scan-now').disabled=false;$('scan-now').classList.remove('scanning');$('scan-now').replaceChildren(el('span','◉','scan-symbol'),document.createTextNode(' Scan now'));}
+function startPolling(){stopPolling();pollAttempts=0;$('scan-now').disabled=true;$('scan-now').classList.add('scanning');$('scan-now').textContent='Scanning…';pollTimer=setInterval(async()=>{pollAttempts++;await load();if(pollAttempts>=20){stopPolling();$('notice').textContent='The search is taking longer than expected. Refresh the feed later or check Netlify function logs.';}},15000);}
+$('scan-form').addEventListener('submit',async event=>{
+ event.preventDefault();const code=$('access-code').value.trim();$('access-code').value='';if(!code)return;
+ $('confirm-scan').disabled=true;$('scan-error').textContent='';
+ try{const r=await fetch('/.netlify/functions/manual-scan',{method:'POST',headers:{Authorization:`Bearer ${code}`}});let data;try{data=await r.json();}catch{throw new Error('Scan function is unavailable. Wait for the latest Netlify deployment.');}
+ if(!r.ok)throw new Error(data.message||'Unable to start the search.');scanDialog.close();$('notice').textContent=data.message;if(data.state==='queued'||data.state==='running')startPolling();else await load();
+ }catch(error){$('scan-error').textContent=error.message;$('access-code').focus();}finally{$('confirm-scan').disabled=false;}
+});

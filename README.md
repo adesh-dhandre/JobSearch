@@ -102,3 +102,11 @@ Requires Node 22+. Netlify installs it automatically for builds. Run `npm instal
 - https://docs.netlify.com/build/functions/background-functions/
 - https://docs.netlify.com/build/data-and-storage/netlify-blobs/
 - https://docs.discord.com/developers/resources/webhook
+
+## Manual scan button (Shinobi edition)
+
+The blue **Scan now** button opens an owner-access dialog. Enter your existing `CRON_SECRET` from Netlify; no additional variable is needed. The code is sent only to this site's authenticated POST endpoint over HTTPS and cleared from the input immediately. It is never saved in browser storage or embedded in source. Do not share it with visitors.
+
+A manual scan starts the same search and Discord workflow as the daily schedule. If today's scan already completed, it reports that instead of consuming another six searches or duplicating the digest. If a scan is running it waits for the same run. Failed scans can be retried. The feed polls for up to five minutes while a scan runs. Deploy the latest commit to enable the button's backend function.
+
+The visual theme uses midnight-blue surfaces, chakra-like glow, orange accents, soft card entrances and hover effects. Reduced-motion preferences disable animations.
